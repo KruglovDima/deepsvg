@@ -49,7 +49,7 @@ class Config(_Config):
 
         # Optimization
         self.learning_rate = 1e-3 * num_gpus
-        self.batch_size = 60 * num_gpus
+        # self.batch_size = 60 * num_gpus
         self.grad_clip = 1.0
 
     def make_schedulers(self, optimizers, epoch_size):

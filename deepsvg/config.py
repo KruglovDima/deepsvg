@@ -11,9 +11,14 @@ class _Config:
         self.num_gpus = num_gpus                              #
 
         self.dataloader_module = "deepsvg.svgtensor_dataset"  #
+        # self.dataloader_module = "deepsvg.svg_dataset"  #
         self.collate_fn = None                                #
-        self.data_dir = "./dataset/icons_tensor/"             #
-        self.meta_filepath = "./dataset/icons_meta.csv"       #
+        # self.data_dir = "./dataset/icons_tensor/"             #
+        self.data_dir = "./dataset/icons_tensor_small/"             #
+        # self.data_dir = "./dataset/icons_svg_preprocessed"             #
+        # self.meta_filepath = "./dataset/icons_meta.csv"       #
+        self.meta_filepath = "./dataset/icons_meta_small.csv"       #
+        # self.meta_filepath = "dataset/svg_meta.csv"       #
         self.loader_num_workers = 0                           #
 
         self.pretrained_path = None                           #
@@ -23,7 +28,8 @@ class _Config:
         self.num_epochs = None                                #
         self.num_steps = None                                 #
         self.learning_rate = 1e-3                             #
-        self.batch_size = 100                                 #
+        # self.batch_size = 100                                 #
+        self.batch_size = 3                              #
         self.warmup_steps = 500                               #
 
 

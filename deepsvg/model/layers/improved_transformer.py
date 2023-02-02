@@ -40,6 +40,7 @@ class TransformerEncoderLayerImproved(Module):
         super(TransformerEncoderLayerImproved, self).__setstate__(state)
 
     def forward(self, src, memory2=None, src_mask=None, src_key_padding_mask=None):
+        
         src1 = self.norm1(src)
         src2 = self.self_attn(src1, src1, src1, attn_mask=src_mask, key_padding_mask=src_key_padding_mask)[0]
         src = src + self.dropout1(src2)

@@ -31,7 +31,7 @@ class SVGDataset(torch.utils.data.Dataset):
 
         if df is None:
             df = pd.read_csv(meta_filepath)
-
+              
         if len(df) > 0:
             if filter_uni is not None:
                 df = df[df.uni.isin(filter_uni)]
@@ -173,7 +173,6 @@ class SVGDataset(torch.utils.data.Dataset):
 
     def get_data(self, t_sep, fillings, model_args=None, label=None):
         res = {}
-
         if model_args is None:
             model_args = self.model_args
 
@@ -182,10 +181,12 @@ class SVGDataset(torch.utils.data.Dataset):
         t_sep.extend([torch.empty(0, 14)] * pad_len)
         fillings.extend([0] * pad_len)
 
+
         t_grouped = [SVGTensor.from_data(torch.cat(t_sep, dim=0), PAD_VAL=self.PAD_VAL).add_eos().add_sos().pad(
             seq_len=self.MAX_TOTAL_LEN + 2)]
         t_sep = [SVGTensor.from_data(t, PAD_VAL=self.PAD_VAL, filling=f).add_eos().add_sos().pad(seq_len=self.MAX_SEQ_LEN + 2) for
                  t, f in zip(t_sep, fillings)]
+        
 
         for arg in set(model_args):
             if "_grouped" in arg:

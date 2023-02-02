@@ -2,6 +2,8 @@ import math
 import torch
 import torch.nn as nn
 
+from varname.helpers import debug
+
 
 class PositionalEncodingSinCos(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=250):
@@ -38,6 +40,11 @@ class PositionalEncodingLUT(nn.Module):
         nn.init.kaiming_normal_(self.pos_embed.weight, mode="fan_in")
 
     def forward(self, x):
+        debug(x.size(), prefix='PositionalEncodingLUT.  Input tensor size:: ')
+        debug(self.position.size(), prefix='PositionalEncodingLUT.  ')
         pos = self.position[:x.size(0)]
+        debug(pos.size(), prefix='PositionalEncodingLUT.  ')
+        debug(self.pos_embed(pos).size(), prefix='PositionalEncodingLUT.  ')
         x = x + self.pos_embed(pos)
+        debug(x.size(), prefix='PositionalEncodingLUT.  Output tensor size:: ')
         return self.dropout(x)

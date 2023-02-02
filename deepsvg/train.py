@@ -24,9 +24,16 @@ def train(cfg: _Config, model_name, experiment_name="", log_dir="./logs", debug=
     print("Loading dataset")
     dataset_load_function = importlib.import_module(cfg.dataloader_module).load_dataset
     dataset = dataset_load_function(cfg)
+
     dataloader = DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True, drop_last=True,
                             num_workers=cfg.loader_num_workers, collate_fn=cfg.collate_fn)
+    print(
+        '\nNum of batches::', len(dataloader)
+    )
+    
     model = cfg.make_model().to(device)
+    print(model)
+    exit()
 
     if cfg.pretrained_path is not None:
         print(f"Loading pretrained model {cfg.pretrained_path}")
@@ -48,7 +55,7 @@ def train(cfg: _Config, model_name, experiment_name="", log_dir="./logs", debug=
     checkpoint_dir = os.path.join(log_dir, "models", model_name, experiment_name)
     visualization_dir = os.path.join(log_dir, "visualization", model_name, experiment_name)
 
-    cfg.set_train_vars(train_vars, dataloader)
+    # cfg.set_train_vars(train_vars, dataloader)
 
     # Optimizer, lr & warmup schedulers
     optimizers = cfg.make_optimizers(model)
@@ -78,6 +85,8 @@ def train(cfg: _Config, model_name, experiment_name="", log_dir="./logs", debug=
         print(f"Epoch {epoch+1}")
 
         for n_iter, data in enumerate(dataloader):
+            #data - dict with dict_keys(['commands', 'args'])
+            
             step = n_iter + epoch * len(dataloader)
 
             if cfg.num_steps is not None and step > cfg.num_steps:
@@ -85,6 +94,7 @@ def train(cfg: _Config, model_name, experiment_name="", log_dir="./logs", debug=
 
             model.train()
             model_args = [data[arg].to(device) for arg in cfg.model_args]
+
             labels = data["label"].to(device) if "label" in data else None
             params_dict, weights_dict = cfg.get_params(step, epoch), cfg.get_weights(step, epoch)
 

@@ -181,10 +181,10 @@ class SVGTensorDataset(torch.utils.data.Dataset):
             if "_grouped" in arg:
                 arg_ = arg.split("_grouped")[0]
                 t_list = t_grouped
+                
             else:
                 arg_ = arg
                 t_list = t_sep
-
             if arg_ == "tensor":
                 res[arg] = t_list
 
@@ -201,7 +201,6 @@ class SVGTensorDataset(torch.utils.data.Dataset):
 
         if "label" in model_args:
             res["label"] = label
-
         return res
 
 

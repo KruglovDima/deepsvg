@@ -12,6 +12,8 @@ from .utils import (_get_padding_mask, _get_key_padding_mask, _get_group_mask, _
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 from scipy.optimize import linear_sum_assignment
 
+from varname.helpers import debug
+
 
 class SVGEmbedding(nn.Module):
     def __init__(self, cfg: _DefaultConfig, seq_len, rel_args=False, use_group=True, group_len=None):
@@ -44,15 +46,36 @@ class SVGEmbedding(nn.Module):
             nn.init.kaiming_normal_(self.group_embed.weight, mode="fan_in")
 
     def forward(self, commands, args, groups=None):
+        print()
+        debug(commands.size(), args.size(), prefix='SVGEmbedding. Input tensor size:: ')
         S, GN = commands.shape
+        debug(S, GN, prefix='SVGEmbedding. Commands shape:: ', merge=True)
 
+        debug(commands.long().size(), prefix='SVGEmbedding.  ')
+        debug(self.command_embed(commands.long()).size(), prefix='SVGEmbedding.  ')
+        
+        debug((args+1).size(), prefix='SVGEmbedding.  ')
+        debug((args+1).long().size(), prefix='SVGEmbedding.  ')
+        debug((args+1).long().view(S, GN, -1).size(), prefix='SVGEmbedding.  ')
+        debug(self.arg_embed, prefix='SVGEmbedding.  ')
+        debug(self.arg_embed((args + 1).long()).size(), prefix='SVGEmbedding.  ')
+        debug(self.arg_embed((args + 1).long()).view(S, GN, -1).size(), prefix='SVGEmbedding.  ')
+        debug(self.embed_fcn, prefix='SVGEmbedding.  ')
+        debug(self.embed_fcn(self.arg_embed((args + 1).long()).view(S, GN, -1)).size(), prefix='SVGEmbedding.  ')
+        
+        
         src = self.command_embed(commands.long()) + \
               self.embed_fcn(self.arg_embed((args + 1).long()).view(S, GN, -1))  # shift due to -1 PAD_VAL
+              
+        debug(src.size(), prefix='SVGEmbedding.  ')
 
         if self.use_group:
             src = src + self.group_embed(groups.long())
-
+            
+        debug(self.pos_encoding, prefix='SVGEmbedding.  ')
+        
         src = self.pos_encoding(src)
+        debug(src.size(), prefix='SVGEmbedding. Output tensor size:: ')
 
         return src
 
@@ -132,9 +155,11 @@ class Encoder(nn.Module):
         src = self.embedding(commands, args, group_mask)
 
         if self.cfg.model_type == "transformer":
+            debug(src.size(), prefix='Encoder. Input after embedding:: ')
             memory = self.encoder(src, mask=None, src_key_padding_mask=key_padding_mask, memory2=l)
-
+            debug(memory.size(), prefix='Encoder. Out from encoder:: ')
             z = (memory * padding_mask).sum(dim=0, keepdim=True) / padding_mask.sum(dim=0, keepdim=True)
+            debug(z.size(), prefix='Encoder. Tensor after padding mask norm:: ')
         else:  # "lstm"
             hidden_cell = (src.new_zeros(2, N, self.cfg.d_model // 2),
                            src.new_zeros(2, N, self.cfg.d_model // 2))
@@ -148,19 +173,27 @@ class Encoder(nn.Module):
             z = memory.gather(dim=0, index=idx)
 
         z = _unpack_group_batch(N, z)
+        debug(z.size(), prefix='Encoder. Tensor after _unpack_group_batch:: ')
 
         if self.cfg.encode_stages == 2:
+            print('We have 2 encoder stages.')
             src = z.transpose(0, 1)
+            debug(src.size(), prefix='Encoder. Tensor after transpose(0, 1):: ')
             src = _pack_group_batch(src)
+            debug(src.size(), prefix='Encoder. Tensor after _pack_group_batch:: ')
             l = self.label_embedding(label).unsqueeze(0) if self.cfg.label_condition else None
 
             if not self.cfg.self_match:
+                debug(self.hierarchical_PE, prefix='Encoder.  ')
                 src = self.hierarchical_PE(src)
+                debug(src.size(), prefix='Encoder.  ')
 
             memory = self.hierarchical_encoder(src, mask=None, src_key_padding_mask=key_visibility_mask, memory2=l)
+            debug(memory.size(), prefix='Encoder. Out from hierarchical_encoder:: ')
             z = (memory * visibility_mask).sum(dim=0, keepdim=True) / visibility_mask.sum(dim=0, keepdim=True)
+            debug(z.size(), prefix='Encoder. Tensor after visibility mask norm:: ')
             z = _unpack_group_batch(N, z)
-
+            debug(z.size(), prefix='Encoder. Tensor after _unpack_group_batch:: ')
         return z
 
 
@@ -194,7 +227,11 @@ class Bottleneck(nn.Module):
         self.bottleneck = nn.Linear(cfg.d_model, cfg.dim_z)
 
     def forward(self, z):
-        return self.bottleneck(z)
+        debug(z.size(), prefix='Bottleneck. Input tensor size:: ')
+        z = self.bottleneck(z)
+        debug(z.size(), prefix='Bottleneck. Output tensor size:: ')
+
+        return z
 
 
 class Decoder(nn.Module):
@@ -241,20 +278,32 @@ class Decoder(nn.Module):
         return hidden_cell
 
     def forward(self, z, commands, args, label=None, hierarch_logits=None, return_hierarch=False):
+        debug(z.size(), commands.size(), args.size(), prefix='Decoder. Input tensors size:: ', merge=True)
         N = z.size(2)
+        debug(N, prefix='Decoder. ')
         l = self.label_embedding(label).unsqueeze(0) if self.cfg.label_condition else None
+        debug(l, prefix='Decoder. ')
+        
         if hierarch_logits is None:
             z = _pack_group_batch(z)
+            debug(z.size(), prefix='Decoder. (Cause hierarch_logits is None) ')
 
         if self.cfg.decode_stages == 2:
+            print('decode_stages=2')
             if hierarch_logits is None:
+                
                 src = self.hierarchical_embedding(z)
+                debug(src.size(), prefix='Decoder. (Cause decode_stages=2 and hierarch_logits is None:: ')
                 out = self.hierarchical_decoder(src, z, tgt_mask=None, tgt_key_padding_mask=None, memory2=l)
+                debug(out.size(), prefix='Decoder. (Cause decode_stages=2 and hierarch_logits is None:: ')
                 hierarch_logits, z = self.hierarchical_fcn(out)
+                debug(hierarch_logits.size(), z.size(), prefix='Decoder. (Cause decode_stages=2 and hierarch_logits is None:: ')
 
             if self.cfg.label_condition: l = l.unsqueeze(0).repeat(1, z.size(1), 1, 1)
+            
 
             hierarch_logits, z, l = _pack_group_batch(hierarch_logits, z, l)
+            debug(hierarch_logits.size(), z.size(), l, prefix='Decoder. (After _pack_group_batch)  ')
 
             if return_hierarch:
                 return _unpack_group_batch(N, hierarch_logits, z)
@@ -275,7 +324,10 @@ class Decoder(nn.Module):
                 out, _ = self.decoder(src, hidden_cell)
 
         else:  # "one_shot"
+            print('=========else')
+            debug(self.embedding, prefix='Decoder.  ')
             src = self.embedding(z)
+            debug(src.size(), z.size(), prefix='Decoder. (After self.embedding(z)', merge=True)
             out = self.decoder(src, z, tgt_mask=None, tgt_key_padding_mask=None, memory2=l)
 
         command_logits, args_logits = self.fcn(out)
@@ -357,25 +409,29 @@ class SVGTransformer(nn.Module):
 
         if z is None:
             z = self.encoder(commands_enc, args_enc, label)
+            debug(z.size(), prefix='SVGTransformer. Encoder output size:: ')
 
             if self.cfg.use_resnet:
                 z = self.resnet(z)
 
             if self.cfg.use_vae:
+                print('---vae')
                 z, mu, logsigma = self.vae(z)
             else:
+                print('---bottleneck')
                 z = self.bottleneck(z)
         else:
             z = _make_seq_first(z)
-
         if encode_mode: return z
 
         if return_tgt:  # Train mode
+            print('---return_tgt')
             commands_dec_, args_dec_ = commands_dec_[:-1], args_dec_[:-1]
+            debug(commands_dec_.size(), args_dec_.size(), prefix='Cause return_tgt:: ', merge=True)
 
         out_logits = self.decoder(z, commands_dec_, args_dec_, label, hierarch_logits=hierarch_logits,
                                   return_hierarch=return_hierarch)
-
+        exit()
         if return_hierarch:
             return out_logits
 

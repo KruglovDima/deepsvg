@@ -11,6 +11,8 @@ from torch.nn.modules.normalization import LayerNorm
 
 from .attention import MultiheadAttention
 
+from varname.helpers import debug
+
 
 class Transformer(Module):
     r"""A transformer model. User is able to modify the attributes as needed. The architecture
@@ -178,13 +180,18 @@ class TransformerEncoder(Module):
             see the docs in Transformer class.
         """
         output = src
+        debug(src.size(), prefix='TransformerEncoder. Input tensor size:: ')
+        
 
-        for mod in self.layers:
+        for mod_n, mod in enumerate(self.layers):
+            debug(mod, prefix='\nTransformerEncoder. Layer #{}:: '.format(mod_n))
             output = mod(output, memory2=memory2, src_mask=mask, src_key_padding_mask=src_key_padding_mask)
+            debug(output.size(), prefix='TransformerEncoder. Layer #{} output tensor:: '.format(mod_n))
 
+        debug(self.norm, prefix='TransformerEncoder.  ')
         if self.norm is not None:
             output = self.norm(output)
-
+        debug(output.size(), prefix='TransformerEncoder. Output tensor:: ')
         return output
 
 
@@ -228,13 +235,18 @@ class TransformerDecoder(Module):
         Shape:
             see the docs in Transformer class.
         """
+        debug(tgt.size(), memory.size(), prefix='TransformerDecoder. Input tensors size:: ', merge=True)
         output = tgt
 
-        for mod in self.layers:
+        for mod_n, mod in enumerate(self.layers):
+            debug(mod, prefix='TransformerDecoder. Layer#{}'.format(mod_n))
+            debug(output.size(), prefix='TransformerDecoder. Layer input tensor size:: ')
             output = mod(output, memory, memory2=memory2, tgt_mask=tgt_mask,
                          memory_mask=memory_mask,
                          tgt_key_padding_mask=tgt_key_padding_mask,
                          memory_key_padding_mask=memory_key_padding_mask)
+            debug(output.size(), prefix='TransformerDecoder. Layer output tensor size:: ')
+            
 
         if self.norm is not None:
             output = self.norm(output)
