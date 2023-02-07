@@ -32,8 +32,8 @@ def train(cfg: _Config, model_name, experiment_name="", log_dir="./logs", debug=
     )
     
     model = cfg.make_model().to(device)
-    print(model)
-    exit()
+    # print(model)
+    # exit()
 
     if cfg.pretrained_path is not None:
         print(f"Loading pretrained model {cfg.pretrained_path}")
@@ -86,7 +86,6 @@ def train(cfg: _Config, model_name, experiment_name="", log_dir="./logs", debug=
 
         for n_iter, data in enumerate(dataloader):
             #data - dict with dict_keys(['commands', 'args'])
-            
             step = n_iter + epoch * len(dataloader)
 
             if cfg.num_steps is not None and step > cfg.num_steps:

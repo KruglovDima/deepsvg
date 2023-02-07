@@ -14,6 +14,8 @@ from deepsvg.utils.utils import batchify
 from .state.project import DeepSVGProject, Frame
 from .utils import easein_easeout
 
+from varname.helpers import debug
+
 
 device = torch.device("cuda:0"if torch.cuda.is_available() else "cpu")
 pretrained_path = "./pretrained/hierarchical_ordered.pth.tar"
@@ -25,6 +27,8 @@ model.eval()
 
 
 dataset = load_dataset(cfg)
+
+utils.load_model(pretrained_path, model)
 
 
 def decode(z):
@@ -44,6 +48,7 @@ def encode_svg(svg):
 
 def interpolate_svg(svg1, svg2, n=10, ease=True):
     z1, z2 = encode_svg(svg1), encode_svg(svg2)
+    
 
     alphas = torch.linspace(0., 1., n+2)[1:-1]
     if ease:
@@ -65,9 +70,13 @@ def finetune_model(project: DeepSVGProject, nb_augmentations=3500):
 
     utils.load_model(pretrained_path, model)
     print("Finetuning...")
+
+
     finetune_dataset = SVGFinetuneDataset(dataset, svgs, frac=1.0, nb_augmentations=nb_augmentations)
     dataloader = DataLoader(finetune_dataset, batch_size=cfg.batch_size, shuffle=True, drop_last=False,
                             num_workers=cfg.loader_num_workers, collate_fn=cfg.collate_fn)
+
+    
 
     # Optimizer, lr & warmup schedulers
     optimizers = cfg.make_optimizers(model)
@@ -82,6 +91,7 @@ def finetune_model(project: DeepSVGProject, nb_augmentations=3500):
         model_args = [data[arg].to(device) for arg in cfg.model_args]
         labels = data["label"].to(device) if "label" in data else None
         params_dict, weights_dict = cfg.get_params(step, epoch), cfg.get_weights(step, epoch)
+        
 
         for i, (loss_fn, optimizer, scheduler_lr, scheduler_warmup, optimizer_start) in enumerate(
                 zip(loss_fns, optimizers, scheduler_lrs, scheduler_warmups, cfg.optimizer_starts), 1):

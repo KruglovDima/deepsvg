@@ -170,7 +170,7 @@ class SVG:
             f.write(self.to_str())
 
     def save_png(self, file_path):
-        cairosvg.svg2png(bytestring=self.to_str(), write_to=file_path)
+        cairosvg.svg2png(bytestring=self.to_str(), write_to=file_path, background_color='white')
 
     def draw(self, fill=False, file_path=None, do_display=True, return_png=False,
              with_points=False, with_handles=False, with_bboxes=False, with_markers=False, color_firstlast=False,

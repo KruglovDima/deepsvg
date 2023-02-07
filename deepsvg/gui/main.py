@@ -24,12 +24,12 @@ from deepsvg.svglib.geom import Point
 from deepsvg.svglib.svg_command import SVGCommandMove, SVGCommandLine, SVGCommandBezier
 from deepsvg.svgtensor_dataset import SVGTensorDataset
 
-from .layout.aligned_textinput import AlignedTextInput
-from .state.state import State, ToolMode, DrawMode, LoopMode, PlaybackMode
-from .state.project import Frame
-from .config import ROOT_DIR
-from .interpolate import compute_interpolation
-from .utils import *
+from deepsvg.gui.layout.aligned_textinput import AlignedTextInput
+from deepsvg.gui.state.state import State, ToolMode, DrawMode, LoopMode, PlaybackMode
+from deepsvg.gui.state.project import Frame
+from deepsvg.gui.config import ROOT_DIR
+from deepsvg.gui.interpolate import compute_interpolation
+from deepsvg.gui.utils import *
 
 
 if not os.path.exists(ROOT_DIR):

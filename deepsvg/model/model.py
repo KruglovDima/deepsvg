@@ -278,7 +278,7 @@ class Decoder(nn.Module):
         return hidden_cell
 
     def forward(self, z, commands, args, label=None, hierarch_logits=None, return_hierarch=False):
-        debug(z.size(), commands.size(), args.size(), prefix='Decoder. Input tensors size:: ', merge=True)
+        # debug(z.size(), commands.size(), args.size(), prefix='Decoder. Input tensors size:: ', merge=True)
         N = z.size(2)
         debug(N, prefix='Decoder. ')
         l = self.label_embedding(label).unsqueeze(0) if self.cfg.label_condition else None
@@ -431,7 +431,7 @@ class SVGTransformer(nn.Module):
 
         out_logits = self.decoder(z, commands_dec_, args_dec_, label, hierarch_logits=hierarch_logits,
                                   return_hierarch=return_hierarch)
-        exit()
+        # exit()
         if return_hierarch:
             return out_logits
 
