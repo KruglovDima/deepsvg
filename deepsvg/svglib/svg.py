@@ -235,7 +235,7 @@ class SVG:
             f'{newline.join(svg_path_group.to_str(fill=fill, with_markers=with_markers) for svg_path_group in [*self.svg_path_groups, *viz_elements])}'
             '</svg>')
 
-    def _apply_to_paths(self, method, *args, **kwargs):
+    def  _apply_to_paths(self, method, *args, **kwargs):
         for path_group in self.svg_path_groups:
             getattr(path_group, method)(*args, **kwargs)
         return self

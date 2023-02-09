@@ -5,6 +5,7 @@ import pickle
 import torch
 import cv2
 import numpy as np
+import cairosvg
 
 from deepsvg.gui.interpolate import decode
 from deepsvg.difflib.tensor import SVGTensor
@@ -30,6 +31,8 @@ class SVG_from_dataset_reader:
             if not os.path.exists(self.out_dir):
                 os.mkdir(self.out_dir)
 
+        self.categories = {}
+
         # create ids list
         try:
         # if 'id' in self.meta_file.head(0).columns.to_list():
@@ -42,41 +45,82 @@ class SVG_from_dataset_reader:
         for id in self.ids_list:
             svg_ = SVG_from_dataset(id, self.meta_file, self.pkl_dir_path)
             png_outpath = os.path.join(self.out_dir, '{:06d}.png'.format(id))
+            # png_outpath = 'out/test_1.png'
+            # svg_.svg.zoom(4)
+            # svg_.svg.viewbox.scale(4)
+            
+            # create category dict
+            print(svg_.category, svg_.subcategory)
+            if svg_.category not in self.categories:
+                self.categories[svg_.category] = []
+            
+            if svg_.subcategory not in self.categories[svg_.category]:
+                self.categories[svg_.category].append(svg_.subcategory)
 
-            svg_.svg.zoom(4)
-            svg_.svg.viewbox.scale(4)
+            # print(self.categories)
 
+            cairosvg.svg2png(
+                bytestring=svg_.svg.to_str(), 
+                dpi=500,
+                parent_width=200,
+                parent_height=200,
+                output_width=800,
+                output_height=800,
+                write_to=png_outpath, 
+                background_color='white'
 
-            svg_.svg.save_png(png_outpath)
+            )
+            # svg_.svg.save_png(png_outpath)
 
             img2show = cv2.imread(png_outpath)
 
+            # img2show = cv2.dilate(
+            #     img2show, 
+            #     kernel=np.ones((1, 1), 'uint8'),
+            #     iterations=5
+            # )
+
+            fontface = 2
+            fontscale = 1
+            text_color = (0, 0, 0)
+            thickness = 1
+
+            
             cv2.putText(
                 img2show,
                 'id: {}'.format(
                     svg_.id
                 ),
-                (10, 10), 
-                1, 0.7, (255, 0, 0), 1
+                (10, 30), 
+                fontface, fontscale, text_color, thickness
             )
             cv2.putText(
                 img2show,
                 'category: {} '.format(
                     svg_.category
                 ),
-                (10, 20), 
-                1, 0.7, (255, 0, 0), 1
+                (10, 60), 
+                fontface, fontscale, text_color, thickness
             )
             cv2.putText(
                 img2show,
                 'subcategory: {}'.format(
                     svg_.subcategory
                 ),
-                (10, 30), 
-                1, 0.7, (255, 0, 0), 1
+                (10, 90), 
+                fontface, fontscale, text_color, thickness
             )
 
             cv2.imwrite(png_outpath, img2show)
+
+    def save_category_dict(self):
+        text_path = '{}_categories.txt'
+        with open(text_path, 'w') as f:
+            for key in self.categories.keys:
+                info_line = '{}:: {}'.format(key, self.categories[key])
+                f.write(info_line)
+                f.write('\n')
+            
 
 
 class SVG_from_dataset:
@@ -112,14 +156,12 @@ class SVG_from_dataset:
         t_sep = self.tensors[0]
         tensor_pred = SVG.from_tensors(t_sep, viewbox=Bbox(200))
         self.svg = tensor_pred
-        print(type(self.svg))
 
-
-        
 
 if __name__ == '__main__':
     test_cl = SVG_from_dataset_reader(
         meta_file_path, pkl_path
     )
     test_cl.vis_tensors()
+    test_cl.save_category_dict()
 

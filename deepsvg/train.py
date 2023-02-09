@@ -100,6 +100,8 @@ def train(cfg: _Config, model_name, experiment_name="", log_dir="./logs", debug=
             for i, (loss_fn, optimizer, scheduler_lr, scheduler_warmup, optimizer_start) in enumerate(zip(loss_fns, optimizers, scheduler_lrs, scheduler_warmups, cfg.optimizer_starts), 1):
                 optimizer.zero_grad()
 
+                debug(model_args)
+                
                 output = model(*model_args, params=params_dict)
                 loss_dict = loss_fn(output, labels, weights=weights_dict)
 

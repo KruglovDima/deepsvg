@@ -185,6 +185,7 @@ class SVGTensorDataset(torch.utils.data.Dataset):
             else:
                 arg_ = arg
                 t_list = t_sep
+
             if arg_ == "tensor":
                 res[arg] = t_list
 

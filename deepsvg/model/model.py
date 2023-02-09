@@ -213,9 +213,13 @@ class VAE(nn.Module):
         nn.init.constant_(self.enc_sigma_fcn.bias, 0)
 
     def forward(self, z):
+        debug(z.size(), prefix='VAE. Input:: ')
         mu, logsigma = self.enc_mu_fcn(z), self.enc_sigma_fcn(z)
+        debug(mu.size(), logsigma.size(), prefix='VAE:: ')
         sigma = torch.exp(logsigma / 2.)
+        debug(sigma.size(), prefix='VAE:: ')
         z = mu + sigma * torch.randn_like(sigma)
+        debug(z.size(), prefix='VAE. Output:: ')
 
         return z, mu, logsigma
 

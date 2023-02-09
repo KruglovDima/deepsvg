@@ -11,8 +11,8 @@ from deepsvg.svglib.geom import Bbox
 from deepsvg.svgtensor_dataset import load_dataset, SVGFinetuneDataset
 from deepsvg.utils.utils import batchify
 
-from .state.project import DeepSVGProject, Frame
-from .utils import easein_easeout
+from deepsvg.gui.state.project import DeepSVGProject, Frame
+from deepsvg.gui.utils import easein_easeout
 
 from varname.helpers import debug
 
@@ -28,26 +28,24 @@ model.eval()
 
 dataset = load_dataset(cfg)
 
-utils.load_model(pretrained_path, model)
 
-
-def decode(z):
+def decode(z, model=model, viewbox_size=256):
     commands_y, args_y = model.greedy_sample(z=z)
     tensor_pred = SVGTensor.from_cmd_args(commands_y[0].cpu(), args_y[0].cpu())
-    svg_path_sample = SVG.from_tensor(tensor_pred.data, viewbox=Bbox(256))
+    svg_path_sample = SVG.from_tensor(tensor_pred.data, viewbox=Bbox(viewbox_size))
 
     return svg_path_sample
 
 
-def encode_svg(svg):
+def encode_svg(svg, model=model):
     data = dataset.get(model_args=[*cfg.model_args, "tensor_grouped"], svg=svg)
     model_args = batchify((data[key] for key in cfg.model_args), device)
     z = model(*model_args, encode_mode=True)
     return z
 
 
-def interpolate_svg(svg1, svg2, n=10, ease=True):
-    z1, z2 = encode_svg(svg1), encode_svg(svg2)
+def interpolate_svg(svg1, svg2, n=10, ease=True, model=model, viewbox_size=256):
+    z1, z2 = encode_svg(svg1, model), encode_svg(svg2, model)
     
 
     alphas = torch.linspace(0., 1., n+2)[1:-1]
@@ -55,12 +53,13 @@ def interpolate_svg(svg1, svg2, n=10, ease=True):
         alphas = easein_easeout(alphas)
 
     z_list = [(1 - a) * z1 + a * z2 for a in alphas]
-    svgs = [decode(z) for z in z_list]
+    svgs = [decode(z, model, viewbox_size) for z in z_list]
 
     return svgs
 
 
-def finetune_model(project: DeepSVGProject, nb_augmentations=3500):
+# def finetune_model(project: DeepSVGProject, nb_augmentations=3500):
+def finetune_model(project: DeepSVGProject, nb_augmentations=500):
     keyframe_ids = [i for i, frame in enumerate(project.frames) if frame.keyframe]
 
     if len(keyframe_ids) < 2:

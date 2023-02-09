@@ -6,7 +6,8 @@ class ModelConfig(Hierarchical):
         super().__init__()
 
         self.label_condition = False
-        self.use_vae = False
+        # self.use_vae = False
+        self.use_vae = True
 
 
 class Config(Config):
