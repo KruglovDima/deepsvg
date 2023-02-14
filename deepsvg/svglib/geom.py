@@ -16,10 +16,13 @@ def get_rotation_matrix(angle: Union[Angle, float]):
         theta = angle.rad
     else:
         theta = angle
+
     c, s = np.cos(theta), np.sin(theta)
     rot_m = np.array([[c, -s],
                       [s, c]], dtype=np.float32)
-    return rot_m
+    # print(rot_m)
+    # exit()
+    return rot_m 
 
 
 def union_bbox(bbox_list: List[Bbox]):

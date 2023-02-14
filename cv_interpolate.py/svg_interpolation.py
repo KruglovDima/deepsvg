@@ -126,35 +126,59 @@ if __name__ == '__main__':
 
     # load pattern svg from .svg format
     # pattern_svg_path = '/home/ilpech/repositories/thirdparty/deepsvg/dataset/patterns/sensesay_logo_red.svg'
-    pattern_svg_path = '/home/ilpech/repositories/thirdparty/deepsvg/dataset/patterns/sensesay_logo_simple.svg'
+    # pattern_svg_path = '/home/ilpech/repositories/thirdparty/deepsvg/dataset/patterns/sensesay_logo_simple.svg'
+    pattern_svg_path = '/home/ilpech/repositories/thirdparty/deepsvg/dataset/patterns/Patterns.svg'
+    # pattern_svg_path = '/home/ilpech/repositories/thirdparty/deepsvg/dataset/patterns/test_rect.svg'
     pattern_svg = SVG.load_svg(pattern_svg_path)
-    pattern_svg.fill_()
-    pattern_svg.normalize()
+
+    # pattern_svg.fill_()
     pattern_svg.canonicalize()
+    # pattern_svg.normalize()
     pattern_svg = pattern_svg.simplify_heuristic()
+    # exit()
 
-    # load sample from icon8 dataset
-    weather_id = 4521 #weather cloud
-    dataset_svg_sample = SVG_from_dataset(weather_id, meta_file, pkl_path)
-
-    dataset_svg = dataset_svg_sample.svg
-    dataset_svg.fill_()
-    dataset_svg.normalize()
-    dataset_svg.canonicalize()
-    dataset_svg = dataset_svg.simplify_heuristic()
-
-
-
-    frames2interpolate = [pattern_svg, dataset_svg]
-
-    # create inference calculator
-    inference = InterpolationInference(
-        frames2interpolate,
-        pretrained_path,
-        img_outpath
+    # cairosvg.svg2svg(
+    #     bytestring=pattern_svg.to_str(), 
+    #     dpi=500,
+    #     parent_width=int(pattern_svg.viewbox.size.min()),
+    #     parent_height=int(pattern_svg.viewbox.size.min()),
+    #     output_width=800,
+    #     output_height=800,
+    #     write_to='out/trash/patterns.svg', 
+    #     background_color='white'
+    # )
+    cairosvg.svg2png(
+        bytestring=pattern_svg.to_str(), 
+        dpi=500,
+        parent_width=int(pattern_svg.viewbox.size.min()),
+        parent_height=int(pattern_svg.viewbox.size.min()),
+        output_width=800,
+        output_height=800,
+        write_to='out/trash/patterns.png', 
+        background_color='white'
     )
 
-    inference.compute_interpolation()
+
+    # # load sample from icon8 dataset
+    # weather_id = 4521 #weather cloud
+    # dataset_svg_sample = SVG_from_dataset(weather_id, meta_file, pkl_path)
+
+    # dataset_svg = dataset_svg_sample.svg
+    # dataset_svg.fill_()
+    # dataset_svg.normalize()
+    # dataset_svg.canonicalize()
+    # dataset_svg = dataset_svg.simplify_heuristic()
+
+    # frames2interpolate = [pattern_svg, dataset_svg]
+
+    # # create inference calculator
+    # inference = InterpolationInference(
+    #     frames2interpolate,
+    #     pretrained_path,
+    #     img_outpath
+    # )
+
+    # inference.compute_interpolation()
 
 
 

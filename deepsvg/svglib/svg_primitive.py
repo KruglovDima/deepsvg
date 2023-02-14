@@ -117,19 +117,44 @@ class SVGCircle(SVGEllipse):
 
 
 class SVGRectangle(SVGPrimitive):
-    def __init__(self, xy: Point, wh: Size, *args, **kwargs):
+    def __init__(self, xy: Point, wh: Size, rx, transform, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.xy = xy
         self.wh = wh
 
+        self.rx = rx
+        self.transform = transform
+
+        self.translate = None
+        self.rotate = None
+
     def __repr__(self):
-        return f'SVGRectangle(xy={self.xy} wh={self.wh})'
+        return f'SVGRectangle(xy={self.xy} wh={self.wh} rx={self.rx}, transform={self.transform})'
 
     def to_str(self, *args, **kwargs):
         fill_attr = self._get_fill_attr()
-        return f'<rect {fill_attr} x="{self.xy.x}" y="{self.xy.y}" width="{self.wh.x}" height="{self.wh.y}"/>'
+        str_info = f'<rect {fill_attr} x="{self.xy.x}" y="{self.xy.y}" width="{self.wh.x}" height="{self.wh.y}"/>'
+        if self.rx:
+            str_info = str_info.replace('/', f' rx="{self.rx}"/')
+        if self.transform:
+            str_info = str_info.replace('/', f' transform="{self.transform}"/')
+        return str_info
+    
+    # gerzog's affine transformation research 
+    def parse_transform(self):
+        if 'translate' in self.transform:
+            self.translate = self.transform.split('translate(')[-1].split(')')[0]
+            self.translate = self.translate.replace(',', '').split(' ')
+            self.translate = [float(x) for x in self.translate]
+            self.translate = Point(self.translate[0], self.translate[1])
 
+        if 'rotate' in self.transform:
+            self.rotate = float(self.transform.split('rotate(')[-1].split(')')[0])
+            self.rotate = Angle(self.rotate)
+            
+
+        
     @classmethod
     def from_xml(_, x: minidom.Element):
         fill = not x.hasAttribute("fill") or not x.getAttribute("fill") == "none"
@@ -140,10 +165,42 @@ class SVGRectangle(SVGPrimitive):
         if x.hasAttribute("y"):
             xy.pos[1] = float(x.getAttribute("y"))
         wh = Size(float(x.getAttribute("width")), float(x.getAttribute("height")))
-        return SVGRectangle(xy, wh, fill=fill)
+
+        # rotate atributes
+        if x.hasAttribute("rx"):
+            rx = float(x.getAttribute("rx"))
+        else:
+            rx = None
+        
+        if x.hasAttribute("transform"):
+            transform = str(x.getAttribute("transform"))
+        else:
+            transform = None
+
+        return SVGRectangle(xy, wh, rx, transform, fill=fill)
 
     def to_path(self):
         p0, p1, p2, p3 = self.xy, self.xy + self.wh.xproj(), self.xy + self.wh, self.xy + self.wh.yproj()
+
+        if self.transform:
+            self.parse_transform()
+            rect_points_list = [p0, p1, p2, p3]
+            
+            # if self.translate:
+            #     [p.translate(self.translate) for p in rect_points_list]
+
+            if self.rotate:
+                #calculate means
+                means = np.mean(np.array([p.pos for p in rect_points_list]), axis=0)
+                mean_point = Point(means[0], means[1])
+                #norm coords to means
+                [p.translate(-mean_point) for p in rect_points_list]
+                #rotate across center
+                rect_points_list = [p.rotate(self.rotate) for p in rect_points_list]
+                #return to prev coords
+                [p.translate(mean_point) for p in rect_points_list]
+            p0, p1, p2, p3 = rect_points_list
+
         commands = [
             SVGCommandLine(p0, p1),
             SVGCommandLine(p1, p2),
