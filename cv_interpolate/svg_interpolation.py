@@ -28,6 +28,8 @@ class InterpolationInference:
         self.dataset = load_dataset(self.cfg)
 
         self.outpath = outpath
+        self.img_outpath = '{}_png'.format(self.outpath)
+        self.svg_outpath = '{}_svg'.format(self.outpath)
 
         utils.load_model(self.pretrained_path, self.model)
         
@@ -97,8 +99,13 @@ class InterpolationInference:
 
         for frame_n, frame in enumerate(full_list):
             print(frame_n)
-            png_outpath = os.path.join(self.outpath, '{:06d}.png'.format(frame_n))
-            svg_outpath = os.path.join(self.outpath, '{:06d}.svg'.format(frame_n))
+            png_outpath = os.path.join(self.img_outpath, '{:06d}.png'.format(frame_n))
+            svg_outpath = os.path.join(self.svg_outpath, '{:06d}.svg'.format(frame_n))
+
+            if not os.path.exists(self.img_outpath):
+                os.mkdir(self.img_outpath)
+            if not os.path.exists(self.svg_outpath):
+                os.mkdir(self.svg_outpath)
 
             # frame.save_svg(svg_outpath)
             cairosvg.svg2png(
@@ -111,12 +118,23 @@ class InterpolationInference:
                 write_to=png_outpath, 
                 background_color='white'
             )
+
+            cairosvg.svg2svg(
+                bytestring=frame.to_str(), 
+                dpi=500,
+                parent_width=int(frame.viewbox.size.min()),
+                parent_height=int(frame.viewbox.size.min()),
+                output_width=24,
+                output_height=24,
+                write_to=svg_outpath, 
+                background_color='white'
+            )
         
 
 
 if __name__ == '__main__':
     # image outpath
-    img_outpath = '/home/ilpech/repositories/thirdparty/deepsvg/out/trash'
+    img_outpath = '/home/ilpech/repositories/thirdparty/deepsvg/out/interpolation_001'
     pretrained_path = './pretrained/hierarchical_ordered.pth.tar'
     
     # icon8 dataset
@@ -129,12 +147,12 @@ if __name__ == '__main__':
     # pattern_svg_path = '/home/ilpech/repositories/thirdparty/deepsvg/dataset/patterns/sensesay_logo_simple.svg'
     pattern_svg_path = '/home/ilpech/repositories/thirdparty/deepsvg/dataset/patterns/Patterns.svg'
     # pattern_svg_path = '/home/ilpech/repositories/thirdparty/deepsvg/dataset/patterns/test_rect.svg'
-    pattern_svg = SVG.load_svg(pattern_svg_path)
+    # pattern_svg = SVG.load_svg(pattern_svg_path)
 
     # pattern_svg.fill_()
-    pattern_svg.canonicalize()
+    # pattern_svg.canonicalize()
     # pattern_svg.normalize()
-    pattern_svg = pattern_svg.simplify_heuristic()
+    # pattern_svg = pattern_svg.simplify_heuristic()
     # exit()
 
     # cairosvg.svg2svg(
@@ -147,19 +165,20 @@ if __name__ == '__main__':
     #     write_to='out/trash/patterns.svg', 
     #     background_color='white'
     # )
-    cairosvg.svg2png(
-        bytestring=pattern_svg.to_str(), 
-        dpi=500,
-        parent_width=int(pattern_svg.viewbox.size.min()),
-        parent_height=int(pattern_svg.viewbox.size.min()),
-        output_width=800,
-        output_height=800,
-        write_to='out/trash/patterns.png', 
-        background_color='white'
-    )
+
+    # cairosvg.svg2png(
+    #     bytestring=pattern_svg.to_str(), 
+    #     dpi=500,
+    #     parent_width=int(pattern_svg.viewbox.size.min()),
+    #     parent_height=int(pattern_svg.viewbox.size.min()),
+    #     output_width=800,
+    #     output_height=800,
+    #     write_to='out/trash/patterns.png', 
+    #     background_color='white'
+    # )
 
 
-    # # load sample from icon8 dataset
+    # load sample from icon8 dataset
     # weather_id = 4521 #weather cloud
     # dataset_svg_sample = SVG_from_dataset(weather_id, meta_file, pkl_path)
 
@@ -171,14 +190,35 @@ if __name__ == '__main__':
 
     # frames2interpolate = [pattern_svg, dataset_svg]
 
-    # # create inference calculator
-    # inference = InterpolationInference(
-    #     frames2interpolate,
-    #     pretrained_path,
-    #     img_outpath
-    # )
 
-    # inference.compute_interpolation()
+    # interpolate res from interpolation
+    pattern_svg_path_1 = 'out/interpolation_001_svg/000000.svg'
+    pattern_svg_1 = SVG.load_svg(pattern_svg_path_1)
+
+    pattern_svg_1.fill_()
+    pattern_svg_1.canonicalize()
+    pattern_svg_1.normalize()
+    pattern_svg_1 = pattern_svg_1.simplify_heuristic()
+    
+    pattern_svg_path_2 = 'out/interpolation_001_svg/000001.svg'
+    pattern_svg_2 = SVG.load_svg(pattern_svg_path_2)
+
+    pattern_svg_2.fill_()
+    pattern_svg_2.canonicalize()
+    pattern_svg_2.normalize()
+    pattern_svg_2 = pattern_svg_2.simplify_heuristic()
+
+    frames2interpolate = [pattern_svg_1, pattern_svg_2]
+
+
+    # create inference calculator
+    inference = InterpolationInference(
+        frames2interpolate,
+        pretrained_path,
+        img_outpath
+    )
+
+    inference.compute_interpolation()
 
 
 
